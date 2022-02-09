@@ -1,0 +1,34 @@
+{
+  "name": "event-invoke",
+  "version": "0.0.8",
+  "description": "Invoker and callee based on event model.",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "test": "jest --coverage",
+    "demo": "node demo.js"
+  },
+  "devDependencies": {
+    "jest": "^24.9.0"
+  },
+  "repository": {
+    "url": "https://github.com/x-cold/event-invoke",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/x-cold/event-invoke/issues"
+  },
+  "author": {
+    "name": "x-cold",
+    "email": "xcold1995@gmail.com"
+  },
+  "engines": {
+    "node": "8"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}
