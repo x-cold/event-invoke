@@ -14,6 +14,8 @@ $ npm install --save event-invoke
 
 ## Usage
 
+### Rpc call for cross-process app
+
 ```js
 const { Caller } = require('event-invoke');
 
@@ -44,6 +46,155 @@ callee.register(function max(...args) {
 });
 
 callee.listen();
+```
+
+### Custom rpc call via pm2 process manager
+
+```js
+// pm2.config.js
+module.exports = {
+  apps: [
+    {
+      script: 'master.js',
+      name: 'master',
+      exec_mode: 'fork',
+    },
+    {
+      script: 'worker.js',
+      name: 'worker',
+      exec_mode: 'fork',
+      instances: 2,
+    }
+  ],
+};
+
+```
+
+```js
+// master.js
+import pm2 from 'pm2';
+import {
+  Invoker
+} from 'event-invoke';
+import EventEmitter from 'events';
+
+class Bridge extends EventEmitter {
+  connected = true;
+  index = -1;
+
+  constructor() {
+    super();
+    process.on('message', (packet) => {
+      this.emit('message', packet.data);
+    });
+  }
+
+  send(data) {
+    pm2.list((err, processes) => {
+      const list = processes.filter(p => p.name === 'worker');
+      this.index = (this.index + 1) % list.length;
+      const workerPid = list[this.index].pm2_env.pm_id;
+      pm2.sendDataToProcessId({
+        type: 'worker:msg',
+        data,
+        id: workerPid,
+        topic: 'some topic',
+      }, function (err, res) {
+        if (err) { throw err }
+      });
+    });
+  }
+
+  disconnect() {
+    this.connected = false;
+  }
+
+  connect() {
+    this.connected = true;
+  }
+}
+
+const bridge = new Bridge();
+const invoker = new Invoker(bridge);
+
+setInterval(async () => {
+  const res2 = await invoker.invoke('max', [1, 2, 3]); // 3
+  console.log('max(1, 2, 3):', res2);
+}, 5 * 1000);
+
+```
+
+```js
+// worker.js
+import net from 'net';
+import pm2 from 'pm2';
+import {
+  Callee
+} from 'event-invoke';
+import EventEmitter from 'events';
+
+class Bridge extends EventEmitter {
+  connected = true;
+
+  constructor() {
+    super();
+    process.on('message', (packet) => {
+      this.emit('message', packet.data);
+    });
+  }
+
+  send(data) {
+    pm2.list((err, processes) => {
+      const list = processes.filter(p => p.name === 'master');
+      const pid = list[0].pm2_env.pm_id;
+      pm2.sendDataToProcessId({
+        type: 'master:msg',
+        data,
+        id: pid,
+        topic: 'some topic',
+      }, function (err, res) {
+        if (err) { throw err }
+      });
+    });
+  }
+
+  disconnect() {
+    this.connected = false;
+  }
+
+  connect() {
+    this.connected = true;
+  }
+}
+
+// process.on('message', (packet) => {
+//   console.log('Worker pid: %s', process.pid);
+//   console.log('Worker received packet: %j', packet.data);
+// });
+const bridge = new Bridge();
+
+const callee = new Callee(bridge);
+
+// async method
+callee.register(async function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+});
+
+// sync method
+callee.register(function max(...args) {
+  return Math.max(...args);
+});
+
+callee.listen();
+
+net.createServer().listen();
+```
+
+```bash
+# Startup app
+pm2 restart pm2.config.js --watch --no-daemon
 ```
 
 ## License
