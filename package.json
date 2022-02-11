@@ -7,8 +7,7 @@
     "lib"
   ],
   "scripts": {
-    "test": "jest --coverage",
-    "demo": "node demo.js"
+    "test": "jest --coverage"
   },
   "devDependencies": {
     "jest": "^24.9.0"
