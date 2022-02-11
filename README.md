@@ -1,12 +1,21 @@
 # event-invoke
 
-[![version](https://img.shields.io/npm/v/event-invoke.svg)](https://www.npmjs.com/package/event-invoke)
-[![downloads](https://img.shields.io/npm/dt/event-invoke.svg)](https://www.npmjs.com/package/event-invoke)
-[![license](https://img.shields.io/npm/l/event-invoke.svg)](https://github.com/x-cold/event-invoke/blob/master/LICENSE)
-[![Travis](https://img.shields.io/travis/x-cold/event-invoke.svg)](https://travis-ci.org/x-cold/event-invoke)
-[![Coverage](https://img.shields.io/codecov/c/github/x-cold/event-invoke/master.svg)](https://codecov.io/gh/x-cold/event-invoke)
+[![NPM version][npm-image]][npm-url]
+[![build status][gitflow-image]][gitflow-url]
+[![Test coverage][codecov-image]][codecov-url]
+[![npm download][download-image]][download-url]
 
-Invoker and callee based on event model. (Inspired by [node-ipc-call](https://github.com/micooz/node-ipc-call))
+[npm-image]: https://img.shields.io/npm/v/event-invoke.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/event-invoke
+[gitflow-image]: https://github.com/x-cold/event-invoke/actions/workflows/nodejs.yml/badge.svg?branch=master
+[gitflow-url]: https://github.com/x-cold/event-invoke/actions/workflows/nodejs.yml
+[codecov-image]: https://codecov.io/gh/x-cold/event-invoke/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/x-cold/event-invoke
+[download-image]: https://badgen.net/npm/dt/event-invoke
+[download-url]: https://npmjs.org/package/event-invoke
+
+
+The invoker based on event model provides an elegant way to call your methods in another container via promisify functions. (like child-processes, iframe, web worker etc).  (Inspired by [node-ipc-call](https://github.com/micooz/node-ipc-call))
 
 ```
 $ npm install --save event-invoke
@@ -14,24 +23,37 @@ $ npm install --save event-invoke
 
 ## Usage
 
-### Rpc call for cross-process app
+### Invoking method via child process
+
+- [Example code](https://github.com/x-cold/event-invoke/tree/master/examples/nodejs/child_process)
 
 ```js
-const { Caller } = require('event-invoke');
+// parent.js
+const cp = require('child_process');
+const { Invoker } = require('event-invoke');
 
-const invoker = Caller.fork('./foo.js');
+const invokerChannel = cp.fork('./child.js');
 
-await invoker.invoke('sleep', 1000);
-await invoker.invoke('max', [1, 2, 3]); // 3
+const invoker = new Invoker(invokerChannel);
 
-invoker.destroy();
+async function main() {
+  const res1 = await invoker.invoke('sleep', 1000);
+  console.log('sleep 1000ms:', res1);
+  const res2 = await invoker.invoke('max', [1, 2, 3]); // 3
+  console.log('max(1, 2, 3):', res2);
+  invoker.destroy();
+}
+
+main();
 ```
 
 ```js
-// ./foo.js
+// child.js
 const { Callee } = require('event-invoke');
 
-const callee = new Callee();
+const calleeChannel = process;
+
+const callee = new Callee(calleeChannel);
 
 // async method
 callee.register(async function sleep(ms) {
@@ -48,22 +70,23 @@ callee.register(function max(...args) {
 callee.listen();
 ```
 
-### Custom rpc call via pm2 process manager
+### Invoking method via child process via custom channel
+
+- [Example code](https://github.com/x-cold/event-invoke/tree/master/examples/nodejs/pm2)
 
 ```js
-// pm2.config.js
+// pm2.config.cjs
 module.exports = {
   apps: [
     {
-      script: 'master.js',
-      name: 'master',
+      script: 'invoker.js',
+      name: 'invoker',
       exec_mode: 'fork',
     },
     {
-      script: 'worker.js',
-      name: 'worker',
+      script: 'callee.js',
+      name: 'callee',
       exec_mode: 'fork',
-      instances: 2,
     }
   ],
 };
@@ -71,104 +94,59 @@ module.exports = {
 ```
 
 ```js
-// master.js
-import pm2 from 'pm2';
-import {
-  Invoker
-} from 'event-invoke';
-import EventEmitter from 'events';
-
-class Bridge extends EventEmitter {
-  connected = true;
-  index = -1;
-
-  constructor() {
-    super();
-    process.on('message', (packet) => {
-      this.emit('message', packet.data);
-    });
-  }
-
-  send(data) {
-    pm2.list((err, processes) => {
-      const list = processes.filter(p => p.name === 'worker');
-      this.index = (this.index + 1) % list.length;
-      const workerPid = list[this.index].pm2_env.pm_id;
-      pm2.sendDataToProcessId({
-        type: 'worker:msg',
-        data,
-        id: workerPid,
-        topic: 'some topic',
-      }, function (err, res) {
-        if (err) { throw err }
-      });
-    });
-  }
-
-  disconnect() {
-    this.connected = false;
-  }
-
-  connect() {
-    this.connected = true;
-  }
-}
-
-const bridge = new Bridge();
-const invoker = new Invoker(bridge);
-
-setInterval(async () => {
-  const res2 = await invoker.invoke('max', [1, 2, 3]); // 3
-  console.log('max(1, 2, 3):', res2);
-}, 5 * 1000);
-
-```
-
-```js
-// worker.js
+// callee.js
 import net from 'net';
 import pm2 from 'pm2';
 import {
   Callee
-} from 'event-invoke';
+} from '../../../lib/index.js';
 import EventEmitter from 'events';
 
-class Bridge extends EventEmitter {
-  connected = true;
+const messageType = 'event-invoke';
+const messageTopic = 'some topic';
 
+class CalleeChannel extends EventEmitter {
   constructor() {
     super();
-    process.on('message', (packet) => {
-      this.emit('message', packet.data);
-    });
+    this.connect();
+  }
+
+  onProcessMessage(packet) {
+    if (packet.type !== messageType) {
+      return;
+    }
+    this.emit('message', packet.data);
   }
 
   send(data) {
     pm2.list((err, processes) => {
-      const list = processes.filter(p => p.name === 'master');
-      const pid = list[0].pm2_env.pm_id;
+      if (err) { throw err; }
+      const list = processes.filter(p => p.name === 'invoker');
+      const pmId = list[0].pm2_env.pm_id;
       pm2.sendDataToProcessId({
-        type: 'master:msg',
+        id: pmId,
+        type: messageType,
+        topic: messageTopic,
         data,
-        id: pid,
-        topic: 'some topic',
       }, function (err, res) {
-        if (err) { throw err }
+        if (err) { throw err; }
       });
     });
   }
 
-  disconnect() {
-    this.connected = false;
+  connect() {
+    process.on('message', this.onProcessMessage.bind(this));
   }
 
-  connect() {
-    this.connected = true;
+  disconnect() {
+    process.off('message', this.onProcessMessage.bind(this));
   }
 }
 
-const bridge = new Bridge();
-const callee = new Callee(bridge);
+const channel = new CalleeChannel();
+channel.connect();
+
+const callee = new Callee(channel);
 
 // async method
 callee.register(async function sleep(ms) {
@@ -186,67 +164,69 @@ callee.listen();
 
 // keep your process alive
 net.createServer().listen();
-```
 
-```bash
-# Startup app
-pm2 restart pm2.config.js --watch --no-daemon
 ```
-
-### Custom rpc call by event-emitter
 
 ```js
-const Callee = require('./lib/callee');
-const Invoker = require('./lib/invoker');
-const EventEmitter = require('events');
+// invoker.js
+import pm2 from 'pm2';
+import {
+  Invoker
+} from '../../../lib/index.js';
+import EventEmitter from 'events';
 
-class Bridge extends EventEmitter {
+const messageType = 'event-invoke';
+const messageTopic = 'some topic';
+
+class InvokerChannel extends EventEmitter {
   connected = false;
 
-  send(...args) {
-    return this.emit('message', ...args);
+  onProcessMessage(packet) {
+    if (packet.type !== messageType) {
+      return;
+    }
+    this.emit('message', packet.data);
   }
 
-  disconnect() {
-    this.connected = false;
+  send(data) {
+    pm2.list((err, processes) => {
+      if (err) { throw err; }
+      const list = processes.filter(p => p.name === 'callee');
+      const pmId = list[0].pm2_env.pm_id;
+      pm2.sendDataToProcessId({
+        id: pmId,
+        type: messageType,
+        topic: messageTopic,
+        data,
+      }, function (err, res) {
+        if (err) { throw err; }
+      });
+    });
   }
 
   connect() {
+    process.on('message', this.onProcessMessage.bind(this));
     this.connected = true;
+  }
+
+  disconnect() {
+    process.off('message', this.onProcessMessage.bind(this));
+    this.connected = false;
   }
 }
 
-const bridge = new Bridge();
+const channel = new InvokerChannel();
+channel.connect();
 
-const callee = new Callee(bridge);
+const invoker = new Invoker(channel);
 
-// async method
-callee.register(async function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-});
-
-// sync method
-callee.register(function max(...args) {
-  return Math.max(...args);
-});
-
-callee.listen();
-
-const invoker = new Invoker(bridge);
-
-async function main() {
+setInterval(async () => {
   const res1 = await invoker.invoke('sleep', 1000);
   console.log('sleep 1000ms:', res1);
   const res2 = await invoker.invoke('max', [1, 2, 3]); // 3
   console.log('max(1, 2, 3):', res2);
-  invoker.destroy();
-}
+}, 5 * 1000);
 
-bridge.connect();
-
-main();
 ```
 
 ## License
