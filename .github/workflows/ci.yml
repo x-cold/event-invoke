@@ -21,3 +21,5 @@ jobs:
       run: |
         npm install
         npm test
+    - name: Codecov
+      uses: codecov/codecov-action@v2.1.0

@@ -7,8 +7,8 @@
 
 [npm-image]: https://img.shields.io/npm/v/event-invoke.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/event-invoke
-[gitflow-image]: https://github.com/x-cold/event-invoke/actions/workflows/nodejs.yml/badge.svg?branch=master
-[gitflow-url]: https://github.com/x-cold/event-invoke/actions/workflows/nodejs.yml
+[gitflow-image]: https://github.com/x-cold/event-invoke/actions/workflows/ci.yml/badge.svg?branch=master
+[gitflow-url]: https://github.com/x-cold/event-invoke/actions/workflows/ci.yml
 [codecov-image]: https://codecov.io/gh/x-cold/event-invoke/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/x-cold/event-invoke
 [download-image]: https://badgen.net/npm/dt/event-invoke
