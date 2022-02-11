@@ -1,0 +1,16 @@
+{
+  "name": "pm2-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "callee.js",
+  "type": "module",
+  "scripts": {
+    "start": "pm2 restart pm2.config.cjs --no-daemon --watch",
+    "kill": "pm2 delete invoker && pm2 delete callee"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pm2": "^5.1.2"
+  }
+}
