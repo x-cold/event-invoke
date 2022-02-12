@@ -2,17 +2,18 @@
 import net from 'net';
 import pm2 from 'pm2';
 import {
-  Callee
+  Callee,
+  BaseCalleeChannel
 } from '../../../lib/index.js';
-import EventEmitter from 'events';
 
 const messageType = 'event-invoke';
 const messageTopic = 'some topic';
 
-class CalleeChannel extends EventEmitter {
+class CalleeChannel extends BaseCalleeChannel {
   constructor() {
     super();
-    this.connect();
+    this._onProcessMessage = this.onProcessMessage.bind(this);
+    process.on('message', this._onProcessMessage);
   }
 
   onProcessMessage(packet) {
@@ -38,18 +39,12 @@ class CalleeChannel extends EventEmitter {
     });
   }
 
-  connect() {
-    process.on('message', this.onProcessMessage.bind(this));
-  }
-
-  disconnect() {
-    process.off('message', this.onProcessMessage.bind(this));
+  destory() {
+    process.off('message', this._onProcessMessage);
   }
 }
 
 const channel = new CalleeChannel();
-channel.connect();
-
 const callee = new Callee(channel);
 
 // async method

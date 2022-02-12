@@ -1,15 +1,19 @@
 // invoker.js
 import pm2 from 'pm2';
 import {
-  Invoker
+  Invoker,
+  BaseInvokerChannel
 } from '../../../lib/index.js';
-import EventEmitter from 'events';
 
 const messageType = 'event-invoke';
 const messageTopic = 'some topic';
 
-class InvokerChannel extends EventEmitter {
-  connected = false;
+class InvokerChannel extends BaseInvokerChannel {
+  constructor() {
+    super();
+    this._onProcessMessage = this.onProcessMessage.bind(this);
+    process.on('message', this._onProcessMessage);
+  }
 
   onProcessMessage(packet) {
     if (packet.type !== messageType) {
@@ -35,13 +39,15 @@ class InvokerChannel extends EventEmitter {
   }
 
   connect() {
-    process.on('message', this.onProcessMessage.bind(this));
     this.connected = true;
   }
 
   disconnect() {
-    process.off('message', this.onProcessMessage.bind(this));
     this.connected = false;
+  }
+
+  destory() {
+    process.off('message', this._onProcessMessage);
   }
 }
 
