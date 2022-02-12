@@ -9,7 +9,7 @@
     "index.d.ts"
   ],
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest --coverage --detectOpenHandles --forceExit"
   },
   "devDependencies": {
     "jest": "^24.9.0"

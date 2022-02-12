@@ -10,7 +10,7 @@ const fooScript = path.join(__dirname, 'scripts/foo.js');
 class InvokerChannel extends BaseInvokerChannel {
   constructor(script) {
     super();
-    this.connect(child_process.fork(script));
+    this.connect(script);
     this._onProcessMessage = this.onProcessMessage.bind(this);
     this.cp.on('message', this._onProcessMessage);
   }
@@ -23,35 +23,23 @@ class InvokerChannel extends BaseInvokerChannel {
   }
 
   get connected() {
-    if (!this.cp) {
-      return false;
-    }
     return this.cp.connected;
   }
 
   send(...args) {
-    if (!this.cp) {
-      return;
-    }
     return this.cp.send(...args);
   }
 
   disconnect() {
-    if (!this.cp) {
-      return;
-    }
     return this.cp.disconnect();
   }
 
-  connect(cp) {
-    this.cp = cp;
+  connect(script) {
+    this.cp = child_process.fork(script);
   }
 
   destory() {
-    if (!this.cp) {
-      return;
-    }
-    this.off('message', this._onProcessMessage)
+    this.cp.off('message', this._onProcessMessage);
   }
 }
 
@@ -64,9 +52,6 @@ class EventInvokerChannel extends BaseInvokerChannel {
   }
 
   onMessage(packet) {
-    // if (packet._from !== 'callee') {
-    //   return;
-    // }
     return this.emit('message', packet);
   }
 
@@ -96,9 +81,6 @@ class EventCalleeChannel extends BaseCalleeChannel {
   }
 
   onMessage(packet) {
-    // if (packet._from !== 'invoker') {
-    //   return;
-    // }
     return this.emit('message', packet);
   }
 
