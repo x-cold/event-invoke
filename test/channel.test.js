@@ -1,15 +1,25 @@
 const path = require('path');
+const child_process = require('child_process');
+const { EventEmitter } = require('eventemitter3');
 const Invoker = require('../lib/invoker');
 const Callee = require('../lib/callee');
-const BaseChannel = require('../lib/channel');
-const child_process = require('child_process');
+const { BaseInvokerChannel, BaseCalleeChannel } = require('../lib/channel');
 
 const fooScript = path.join(__dirname, 'scripts/foo.js');
 
-class InvokerChannel extends BaseChannel {
+class InvokerChannel extends BaseInvokerChannel {
   constructor(script) {
     super();
     this.connect(child_process.fork(script));
+    this._onProcessMessage = this.onProcessMessage.bind(this);
+    this.cp.on('message', this._onProcessMessage);
+  }
+
+  onProcessMessage(packet) {
+    if (packet._from !== 'callee') {
+      return;
+    }
+    return this.emit('message', packet);
   }
 
   get connected() {
@@ -35,20 +45,76 @@ class InvokerChannel extends BaseChannel {
 
   connect(cp) {
     this.cp = cp;
-    this.cp.on('message', (packet) => {
-      if (packet._from !== 'callee') {
-        return;
-      }
-      return this.emit('message', packet);
-    })
+  }
+
+  destory() {
+    if (!this.cp) {
+      return;
+    }
+    this.off('message', this._onProcessMessage)
   }
 }
 
-class SimpleCommonChannel extends BaseChannel {
+class EventInvokerChannel extends BaseInvokerChannel {
+  constructor(bus) {
+    super();
+    this._bus = bus;
+    this._onMessage = this.onMessage.bind(this);
+    this._bus.on('message', this._onMessage);
+  }
+
+  onMessage(packet) {
+    // if (packet._from !== 'callee') {
+    //   return;
+    // }
+    return this.emit('message', packet);
+  }
+
+  send(...args) {
+    return this._bus.emit('message', ...args);
+  }
+
+  disconnect() {
+    this.connected = false;
+  }
+
+  connect() {
+    this.connected = true;
+  }
+
+  destory() {
+    this._bus.off('message', this._onMessage);
+  }
 }
 
-const commonChannel = new SimpleCommonChannel();
+class EventCalleeChannel extends BaseCalleeChannel {
+  constructor(bus) {
+    super();
+    this._bus = bus;
+    this._onMessage = this.onMessage.bind(this);
+    this._bus.on('message', this._onMessage);
+  }
 
+  onMessage(packet) {
+    // if (packet._from !== 'invoker') {
+    //   return;
+    // }
+    return this.emit('message', packet);
+  }
+
+  send(...args) {
+    return this._bus.emit('message', ...args);
+  }
+
+  destory() {
+    this._bus.off('message', this._onMessage);
+  }
+}
+
+const bus = new EventEmitter();
+
+const eventInvokerChannel = new EventInvokerChannel(bus);
+const eventCalleeChannel = new EventCalleeChannel(bus);
 
 test('fork() should not throw', () => {
   expect(() => {
@@ -83,17 +149,42 @@ test('destroy() should reject unconsumed promises', async () => {
 });
 
 test('invoke(max) should return 3', async () => {
-  const callee = new Callee(commonChannel);
+  const callee = new Callee(eventCalleeChannel);
   // sync method
   callee.register(function max(...args) {
     return Math.max(...args);
   });
   callee.listen();
 
-  const invoker = new Invoker(commonChannel);
+  const invoker = new Invoker(eventInvokerChannel);
   // NOTICE: before invoking a method, channel.connected should equal to true.
-  commonChannel.connect();
+  eventInvokerChannel.connect();
 
   expect(await invoker.invoke('max', [1, 2, 3])).toBe(3);
   invoker.destroy();
+  callee.destroy();
+});
+
+test('base channel should be ok', async () => {
+  const baseCalleeChannel = new BaseCalleeChannel();
+  const callee = new Callee(baseCalleeChannel);
+  // sync method
+  callee.register(function max(...args) {
+    return Math.max(...args);
+  });
+  callee.listen();
+
+  const bsaeInvokerChannel = new BaseInvokerChannel();
+  const invoker = new Invoker(bsaeInvokerChannel);
+  // NOTICE: before invoking a method, channel.connected should equal to true.
+  bsaeInvokerChannel.connect();
+
+  // NOTICE: the following two lines do nothing but improve codecov
+  baseCalleeChannel.send({ test: 1 });
+  bsaeInvokerChannel.send({ test: 1 });
+
+  expect(bsaeInvokerChannel.connected).toBe(true);
+  invoker.destroy();
+  callee.destroy();
+  expect(bsaeInvokerChannel.connected).toBe(false);
 });

@@ -1,10 +1,12 @@
 {
   "name": "event-invoke",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Invoker and callee based on event model.",
   "main": "lib/index.js",
+  "typings": "index.d.ts",
   "files": [
-    "lib"
+    "lib",
+    "index.d.ts"
   ],
   "scripts": {
     "test": "jest --coverage"
@@ -16,6 +18,14 @@
     "url": "https://github.com/x-cold/event-invoke",
     "type": "git"
   },
+  "keywords": [
+    "invoke",
+    "invoker",
+    "EventEmitter",
+    "Events",
+    "addEventListener",
+    "addListener"
+  ],
   "bugs": {
     "url": "https://github.com/x-cold/event-invoke/issues"
   },
@@ -29,5 +39,8 @@
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "eventemitter3": "^4.0.7"
   }
 }
