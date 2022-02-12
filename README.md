@@ -216,6 +216,7 @@ class InvokerChannel extends EventEmitter {
 }
 
 const channel = new InvokerChannel();
+// NOTICE: before invoking a method, channel.connected should equal to true.
 channel.connect();
 
 const invoker = new Invoker(channel);

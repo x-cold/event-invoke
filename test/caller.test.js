@@ -4,6 +4,7 @@ const child_process = require('child_process');
 
 const fooScript = path.join(__dirname, 'scripts/foo.js');
 
+
 test('fork() should not throw', () => {
   expect(() => {
     const invoker = new Invoker(child_process.fork(fooScript));
@@ -39,7 +40,9 @@ test('invoke() empty method should throw', async () => {
 });
 
 test('invoke() the same methods concurrently should be ok', async () => {
-  const invoker = new Invoker(child_process.fork(fooScript));
+  const invoker = new Invoker(child_process.fork(fooScript), {
+    timeout: -100,
+  });
   expect(
     await Promise.all([
       invoker.invoke('foo', [1, 2]),
