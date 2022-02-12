@@ -98,17 +98,18 @@ module.exports = {
 import net from 'net';
 import pm2 from 'pm2';
 import {
-  Callee
-} from '../../../lib/index.js';
-import EventEmitter from 'events';
+  Callee,
+  BaseCalleeChannel
+} from 'event-invoke';
 
 const messageType = 'event-invoke';
 const messageTopic = 'some topic';
 
-class CalleeChannel extends EventEmitter {
+class CalleeChannel extends BaseCalleeChannel {
   constructor() {
     super();
-    this.connect();
+    this._onProcessMessage = this.onProcessMessage.bind(this);
+    process.on('message', this._onProcessMessage);
   }
 
   onProcessMessage(packet) {
@@ -134,18 +135,12 @@ class CalleeChannel extends EventEmitter {
     });
   }
 
-  connect() {
-    process.on('message', this.onProcessMessage.bind(this));
-  }
-
-  disconnect() {
-    process.off('message', this.onProcessMessage.bind(this));
+  destory() {
+    process.off('message', this._onProcessMessage);
   }
 }
 
 const channel = new CalleeChannel();
-channel.connect();
-
 const callee = new Callee(channel);
 
 // async method
@@ -164,22 +159,25 @@ callee.listen();
 
 // keep your process alive
 net.createServer().listen();
-
 ```
 
 ```js
 // invoker.js
 import pm2 from 'pm2';
 import {
-  Invoker
-} from '../../../lib/index.js';
-import EventEmitter from 'events';
+  Invoker,
+  BaseInvokerChannel
+} from 'event-invoke';
 
 const messageType = 'event-invoke';
 const messageTopic = 'some topic';
 
-class InvokerChannel extends EventEmitter {
-  connected = false;
+class InvokerChannel extends BaseInvokerChannel {
+  constructor() {
+    super();
+    this._onProcessMessage = this.onProcessMessage.bind(this);
+    process.on('message', this._onProcessMessage);
+  }
 
   onProcessMessage(packet) {
     if (packet.type !== messageType) {
@@ -205,18 +203,19 @@ class InvokerChannel extends EventEmitter {
   }
 
   connect() {
-    process.on('message', this.onProcessMessage.bind(this));
     this.connected = true;
   }
 
   disconnect() {
-    process.off('message', this.onProcessMessage.bind(this));
     this.connected = false;
+  }
+
+  destory() {
+    process.off('message', this._onProcessMessage);
   }
 }
 
 const channel = new InvokerChannel();
-// NOTICE: before invoking a method, channel.connected should equal to true.
 channel.connect();
 
 const invoker = new Invoker(channel);
@@ -227,7 +226,6 @@ setInterval(async () => {
   const res2 = await invoker.invoke('max', [1, 2, 3]); // 3
   console.log('max(1, 2, 3):', res2);
 }, 5 * 1000);
-
 ```
 
 ## License

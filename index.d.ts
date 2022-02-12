@@ -5,6 +5,12 @@ type AsyncReturnType<T extends (...args: any) => any> =
 	T extends (...args: any) => infer U ? U :
 	any;
 
+type SafeAsyncReturnType<T> = T extends (...args: any) => any ? AsyncReturnType<T> : void;
+
+type SafeParameters<T> = T extends (...args: any) => any ? Parameters<T> : [void];
+
+type ArrayOrItem<T extends any[]> = T extends [infer L, ...infer R] ? (0 extends R['length'] ? T[0] : T) : void;
+
 export class BaseInvokerChannel extends EventEmitter {
   public connected: boolean;
 
@@ -32,13 +38,13 @@ export class Invoker<API_MAPPING = {}> {
   private _options: InvokerOptions;
   private _promiseMap: Map<string, Function>;
   
-  constructor(channel: BaseInvokerChannel, options: InvokerOptions);
+  constructor(channel: BaseInvokerChannel, options?: InvokerOptions);
 
   invoke<K extends keyof API_MAPPING>(
     name: K,
-    args: Parameters<API_MAPPING[K]>,
-    options: InvokerOptions
-  ): Promise<AsyncReturnType<API_MAPPING[K]>>;
+    args: ArrayOrItem<SafeParameters<API_MAPPING[K]>>,
+    options?: InvokerOptions
+  ): Promise<SafeAsyncReturnType<API_MAPPING[K]>>;
 
   destory(): void;
 
