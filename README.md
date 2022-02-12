@@ -23,6 +23,12 @@ $ npm install --save event-invoke
 
 ## Usage
 
+- Install the package
+
+```bash
+$ npm i -S event-invoke
+```
+
 ### Invoking method via child process
 
 - [Example code](https://github.com/x-cold/event-invoke/tree/master/examples/nodejs/child_process)
