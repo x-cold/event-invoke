@@ -39,7 +39,8 @@ class InvokerChannel extends BaseInvokerChannel {
   }
 
   destory() {
-    this.cp.off('message', this._onProcessMessage);
+    // NOTICE: Node.js v8.x does not provide off method
+    this.cp.off && this.cp.off('message', this._onProcessMessage);
   }
 }
 
