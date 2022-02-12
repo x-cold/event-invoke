@@ -228,6 +228,18 @@ setInterval(async () => {
 }, 5 * 1000);
 ```
 
+### Web worker
+
+TODO
+
+### Iframe
+
+TODO
+
+### Browser page
+
+TODO
+
 ## License
 
 MIT
