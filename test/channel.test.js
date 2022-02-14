@@ -68,7 +68,7 @@ class EventInvokerChannel extends BaseInvokerChannel {
     this.connected = true;
   }
 
-  destory() {
+  destroy() {
     this._bus.off('message', this._onMessage);
   }
 }
@@ -89,7 +89,7 @@ class EventCalleeChannel extends BaseCalleeChannel {
     return this._bus.emit('message', ...args);
   }
 
-  destory() {
+  destroy() {
     this._bus.off('message', this._onMessage);
   }
 }

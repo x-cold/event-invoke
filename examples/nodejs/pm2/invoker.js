@@ -46,7 +46,7 @@ class InvokerChannel extends BaseInvokerChannel {
     this.connected = false;
   }
 
-  destory() {
+  destroy() {
     process.off('message', this._onProcessMessage);
   }
 }

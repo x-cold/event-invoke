@@ -20,13 +20,13 @@ export class BaseInvokerChannel extends EventEmitter {
   
   disconnect(): void;
 
-  destory(): void;
+  destroy(): void;
 }
 
 export class BaseCalleeChannel extends EventEmitter {
   send(...args: unknown[]): void;
 
-  destory(): void;
+  destroy(): void;
 }
 
 export interface InvokerOptions {
@@ -46,7 +46,7 @@ export class Invoker<API_MAPPING = {}> {
     options?: InvokerOptions
   ): Promise<SafeAsyncReturnType<API_MAPPING[K]>>;
 
-  destory(): void;
+  destroy(): void;
 
   private _onTimeout(name: string, seq: number): void;
 
@@ -71,7 +71,7 @@ export class Callee {
 
   listen(): Callee;
 
-  destory(): void;
+  destroy(): void;
 
   private _onMessage(msg: unknown): void;
 

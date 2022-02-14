@@ -1,6 +1,6 @@
 {
   "name": "event-invoke",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "description": "Invoker and callee based on event model.",
   "main": "lib/index.js",
   "typings": "index.d.ts",

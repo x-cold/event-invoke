@@ -39,7 +39,7 @@ class CalleeChannel extends BaseCalleeChannel {
     });
   }
 
-  destory() {
+  destroy() {
     process.off('message', this._onProcessMessage);
   }
 }
