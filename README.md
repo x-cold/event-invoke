@@ -17,6 +17,8 @@
 
 The invoker based on event model provides an elegant way to call your methods in another container via promisify functions. (like child-processes, iframe, web worker etc).  (Inspired by [node-ipc-call](https://github.com/micooz/node-ipc-call))
 
+![825cb24fe4bb2cc7f9713606d8594a77](https://user-images.githubusercontent.com/6903313/155465518-c0f7a648-ebf5-462a-b806-4d3ee1e78076.svg)
+
 ```
 $ npm install --save event-invoke
 ```
