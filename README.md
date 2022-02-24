@@ -19,10 +19,6 @@ The invoker based on event model provides an elegant way to call your methods in
 
 ![825cb24fe4bb2cc7f9713606d8594a77](https://user-images.githubusercontent.com/6903313/155465518-c0f7a648-ebf5-462a-b806-4d3ee1e78076.svg)
 
-```
-$ npm install --save event-invoke
-```
-
 ## Usage
 
 - Install the package
