@@ -112,15 +112,16 @@ test('destroy() should be ok', async () => {
   expect(() => invoker.destroy()).not.toThrow();
 });
 
-test('destroy() should be ok without disconnecting channel', async () => {
+test('destroy() should be ok without disconnecting channel', async (done) => {
   const channel = new InvokerChannel(fooScript);
   channel.disconnect = undefined;
   const invoker = new Invoker(channel);
   await invoker.invoke('foo');
   expect(() => invoker.destroy()).not.toThrow();
+  done();
 });
 
-test('destroy() should reject unconsumed promises', async () => {
+test('destroy() should reject unconsumed promises', async (done) => {
   const invoker = new Invoker(new InvokerChannel(fooScript));
   const promise = invoker.invoke('foo');
   invoker.destroy();
@@ -128,6 +129,7 @@ test('destroy() should reject unconsumed promises', async () => {
     await promise;
   } catch (err) {
     expect(err.message).toMatch('rejected by destroy()');
+    done();
   }
 });
 

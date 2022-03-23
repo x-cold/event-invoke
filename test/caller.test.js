@@ -105,3 +105,14 @@ test('_onTimeout() with no promises should do nothing', () => {
   expect(invoker._onTimeout()).toBe(undefined);
   invoker.destroy();
 });
+
+test('fix _seq conflict to avoid timeout', async (callback) => {
+  const invoker = new Invoker(child_process.fork(fooScript));
+  setTimeout(async ()=>{
+    invoker.invoke('longTask');
+  }, 0);
+  setTimeout(async ()=>{
+    expect(invoker.invoke('longTask')).resolves.not.toThrow();
+    callback();
+  }, 2500);
+});
