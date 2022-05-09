@@ -116,3 +116,17 @@ test('fix _seq conflict to avoid timeout', async (callback) => {
     callback();
   }, 2500);
 });
+
+test('promise id should be number', async (callback) => {
+  const invoker = new Invoker(child_process.fork(fooScript));
+  setTimeout(async ()=>{
+    invoker.invoke('foo');
+    invoker.invoke('foo');
+    invoker.invoke('foo');
+    invoker.invoke('foo');
+  }, 0);
+  setTimeout(async ()=>{
+    expect(Object.keys(invoker._promiseMap.get('foo')).every(e=>typeof e === 'string')).toBe(true);
+    callback();
+  }, 5000);
+});
