@@ -34,7 +34,7 @@
     "email": "xcold1995@gmail.com"
   },
   "engines": {
-    "node": ">=8"
+    "node": ">=8.0.0"
   },
   "license": "MIT",
   "publishConfig": {
